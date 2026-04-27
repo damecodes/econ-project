@@ -1,26 +1,38 @@
-from matplotlib import pyplot as plt
 from fred_data import get_data
-from visualization import plot_data
+from data_processing import compute_gdp_growth
 from model import train_model, predict
-import pandas as pd
+import matplotlib.pyplot as plt
+from visualization import plot_indicators, plot_correlation, plot_residuals
 
 def main():
     df = get_data()
 
-    df["GDP_Growth"] = df["GDP"].pct_change() * 100
-    df = df.dropna()
+    df = compute_gdp_growth(df)
 
-    plot_data(df)
-
+    # Train only on past data
     model = train_model(df)
     print(model.summary())
 
+    # Predict for ALL dates (including future)
     df = predict(model, df)
 
-    df[["GDP_Growth", "Predicted_GDP_Growth"]].plot(figsize=(10,5))
-    plt.title("Actual vs Predicted GDP Growth")
-    plt.savefig("charts/gdp_prediction.png")
+    # Plot
+    plt.figure(figsize=(12,6))
+
+    # Actual GDP growth (only where available)
+    plt.plot(df.index, df["GDP_Growth"], label="Actual GDP Growth")
+
+    # Predicted GDP growth (extends forward)
+    plt.plot(df.index, df["Predicted_GDP_Growth"], 
+             linestyle="dashed", label="Predicted GDP Growth")
+
+    plt.title("GDP Nowcasting Model (Extended into 2026)")
+    plt.legend()
+    plt.savefig("charts/gdp_nowcast_extended.png")
     plt.show()
+    plot_indicators(df)
+    plot_correlation(df)
+    plot_residuals(df)
 
 if __name__ == "__main__":
     main()

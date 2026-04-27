@@ -18,5 +18,5 @@ def get_data():
     for name, code in series.items():
         data[name] = fred.get_series(code)
 
-    data = data.dropna()
+    data = data.sort_index()
     return data
