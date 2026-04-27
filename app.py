@@ -1,21 +1,18 @@
 import streamlit as st
 from fred_data import get_data
-from data_processing import compute_gdp_growth
+from data_processing import compute_gdp_growth, compute_feature_growth
 from model import train_model, predict
 
 st.title("GDP Nowcasting Dashboard")
 
-# Load data
 df = get_data()
 
-# Process data (keeps future rows!)
 df = compute_gdp_growth(df)
+df = compute_feature_growth(df)
 
-# Train only on available GDP
-model = train_model(df)
 
-# Predict for ALL dates (including future)
-df = predict(model, df)
+model, scaler = train_model(df)
+df = predict(model, scaler, df)
 
 # Show chart
 st.line_chart(df[["GDP_Growth", "Predicted_GDP_Growth"]])

@@ -1,44 +1,52 @@
 import statsmodels.api as sm
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 FEATURES = ["Unemployment", "CPI", "Industrial_Production", "Retail_Sales"]
 
 def train_model(df):
-    # Use only rows where GDP growth exists
     train_df = df.dropna(subset=["GDP_Growth"]).copy()
 
     X = train_df[FEATURES]
     y = train_df["GDP_Growth"]
 
-    # Remove inf values
+    # Clean data
     X = X.replace([np.inf, -np.inf], np.nan)
-
-    # Drop rows where features are still missing
     X = X.dropna()
-
-    # Align y with cleaned X
     y = y.loc[X.index]
 
-    # Add constant term
-    X = sm.add_constant(X)
+    # ✅ STANDARDIZE HERE
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
 
-    model = sm.OLS(y, X).fit()
-    return model
+    # Convert back to DataFrame (important for statsmodels)
+    import pandas as pd
+    X_scaled = pd.DataFrame(X_scaled, index=X.index, columns=FEATURES)
+
+    X_scaled = sm.add_constant(X_scaled)
+
+    model = sm.OLS(y, X_scaled).fit()
+
+    # Return BOTH model and scaler
+    return model, scaler
 
 
-def predict(model, df):
+def predict(model, scaler, df):
+    import pandas as pd
+
     X = df[FEATURES].copy()
 
-    # Replace inf values
+    # Clean data
     X = X.replace([np.inf, -np.inf], np.nan)
-
-    # Fill missing values so we can predict future periods
     X = X.interpolate().ffill().bfill()
 
-    # Add constant
-    X = sm.add_constant(X)
+    # ✅ USE SAME SCALER (DO NOT FIT AGAIN)
+    X_scaled = scaler.transform(X)
 
-    # Generate predictions
-    df["Predicted_GDP_Growth"] = model.predict(X)
+    X_scaled = pd.DataFrame(X_scaled, index=X.index, columns=FEATURES)
+
+    X_scaled = sm.add_constant(X_scaled)
+
+    df["Predicted_GDP_Growth"] = model.predict(X_scaled)
 
     return df
