@@ -27,3 +27,6 @@ st.write(df.tail(10))
 # Model summary
 st.write("### Model Summary")
 st.text(model.summary())
+
+st.write("NaNs in dataset:")
+st.write(df.isna().sum())
